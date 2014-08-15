@@ -1,0 +1,35 @@
+{
+    "name": "ngBucket",
+    "version": "0.1.0",
+    "description": "WebStorage module for AngularJS",
+    "main": "gulpfile.js",
+    "directories": {
+        "test": "test"
+    },
+    "scripts": {
+        "test": "gulp test"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/EdStudio/ngBucket.git"
+    },
+    "keywords": [
+        "Webstorage"
+    ],
+    "author": "Edmund Hung",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/EdStudio/ngBucket/issues"
+    },
+    "homepage": "https://github.com/EdStudio/ngBucket",
+    "devDependencies": {
+        "del": "^0.1.2",
+        "gulp": "^3.8.7",
+        "gulp-concat": "^2.3.4",
+        "gulp-jshint": "^1.8.4",
+        "gulp-ng-annotate": "^0.3.0",
+        "gulp-sourcemaps": "^1.1.1",
+        "gulp-uglify": "^0.3.1",
+        "jshint-stylish": "^0.4.0"
+    }
+}
