@@ -3,62 +3,72 @@
 
     function _bucketConfigProvider() {
 
-        var app, version;
+        var config = this;
 
-        this.delimiter = '.';
-        this.register = function(app, version) {
-            app = app;
-            version = version;
-        };
+        config.app = 'default';
+        config.delimiter = '.';
 
-        this.$get = function() {
-            var config = {};
-            config.app = app || 'default';
-            config.version = version || '1';
-            config.delimiter = this.delimiter;
-            config.prefix = 'eds';
-
-            return config;
+        config.$get = function() {
+            return {
+                prefix: 'ngBucket',
+                app: config.app,
+                delimiter: config.delimiter
+            };
         };
     }
 
     function _bucketsFactory(name) {
 
-        return ['$rootScope', '$window', '$log', 'ngBucketConfig',
-            function($rootScope, $window, $log, config) {
-
-                var $buckets = {},
+        return ['$window', '$rootScope', '$log', 'ngBucketConfig',
+            function($window, $rootScope, $log, config) {
+                var isStorageSupported = isSupport(name),
+                    $buckets = {},
                     $manager = {
                         use: function(name, defaults) {
-                            return $buckets[name] = angular.extend(defaults || {}, $buckets[name]);
+                            return ($buckets[name] = angular.extend({}, defaults || {}, $buckets[name]));
                         },
                         flush: function(name) {
                             delete $buckets[name];
                         },
                         deleteAll: function() {
-                            for (var name in $buckets) {
-                                this.flush(name);
-                            }
+                            $buckets = {};
+                        },
+                        sync: function() {
+                            if (isStorageSupported) sync();
                         }
                     };
 
-                if (isSupport(name)) {
-                    var webstorage = $window[name],
-                        prefix = config.prefix,
+                if (isStorageSupported) {
+                    var $scope = $rootScope.$new(true),
+                        webstorage = $window[name],
                         appname = config.app,
+                        prefix = config.prefix,
                         delimiter = config.delimiter;
 
-                    for (var i = 0, prefixLength = prefix.length, size = webstorage.length; i < size; i++) {
-                        var key = webstorage.key(i),
-                            identifiers = key.split(delimiter);
-                        if (identifiers.length >= 3 && identifiers[0] == prefix && identifiers[1] == appname) {
-                            ($manager.use(identifiers[2]))[identifiers[3]] = angular.fromJson(webstorage.getItem(key));
-                        }
+                    $scope.buckets = $buckets;
+
+                    whenStorage(function(event) {
+                        console.log(event);
+                        var key = event.key;
+                        syncBuckets(key, function($storage, param) {
+                            if (event.newValue) {
+                                $storage[param] = event.newValue;
+                            } else {
+                                delete $storage[param];
+                            }
+                        });
+                    });
+
+                    for (var i = 0, size = webstorage.length; i < size; i++) {
+                        var key = webstorage.key(i);
+                        syncBuckets(key, function($storage, param) {
+                            $storage[param] = angular.fromJson(webstorage.getItem(key));
+                        });
                     }
 
                     var $snapshot = angular.copy($buckets);
 
-                    $rootScope.$watch(debounce(syncStorage, 200));
+                    $scope.$watch(debounce(sync, 200));
                 }
 
                 return $manager;
@@ -71,15 +81,32 @@
                         storage.removeItem(name);
                         return true;
                     } catch (e) {
-                        $log.warn('EdStorage::Current browser does not support ' + name + '.');
+                        $log.warn('ngBucket::Current browser does not support ' + name + '.');
                         return false;
                     }
                 }
 
+                function whenStorage(callback) {
+                    if ($window.addEventListener) {
+                        $window.addEventListener("storage", callback, false);
+                    } else {
+                        $window.attachEvent("onstorage", callback);
+                    }
+                }
+
+                function syncBuckets(key, handler) {
+                    var identifiers = key.split(delimiter);
+                    if (identifiers.length >= 3 && prefix == identifiers[0] && appname == identifiers[1]) {
+                        handler($manager.use(identifiers[2]), identifiers[3]);
+                    }
+                }
+
+                function now() {
+                    return Date.now || new Date().getTime();
+                }
+
                 function debounce(func, wait, immediate) {
-                    var timeout, args, context, timestamp, result, now = Date.now || function() {
-                        return +new Date;
-                    };
+                    var timeout, args, context, timestamp, result;
 
                     var later = function() {
                         var last = now() - timestamp;
@@ -110,36 +137,37 @@
                     };
                 }
 
-                function syncStorage() {
+                function sync() {
                     if (!angular.equals($buckets, $snapshot)) {
+                        var prefix = prefix + delimiter + appname + delimiter;
 
                         for (var name in $buckets) {
-                            syncBucket([prefix, appname, name], $buckets[name], $snapshot[name] || {});
+                            syncStorage(prefix + name, $buckets[name], $snapshot[name] || {});
                         }
 
                         $snapshot = angular.copy($buckets);
                     }
                 }
 
-                function syncBucket(prefixes, bucket, snapshot) {
-                    if (!angular.equals(bucket, snapshot)) {
-                        for (var nkey in bucket) {
-                            if (!(nkey in snapshot) || !angular.equals(bucket, snapshot[nkey])) {
+                function syncStorage(prefix, storage, last) {
+                    if (!angular.equals(storage, last)) {
+
+                        for (var key in last) {
+                            if (!(key in storage)) webstorage.removeItem(prefix + delimiter + key);
+                        }
+
+                        for (var key in storage) {
+                            if (!(key in last) || !angular.equals(storage, last[key])) {
                                 webstorage.setItem(
-                                    prefixes.concat([nkey]).join(delimiter),
-                                    typeof value === 'string' ? bucket[nkey] : angular.toJson(bucket[nkey])
+                                    prefix + delimiter + key,
+                                    typeof value === 'string' ? storage[key] : angular.toJson(storage[key])
                                 );
                             }
-
-                            delete snapshot[nkey];
                         }
 
-                        for (var key in snapshot) {
-                            webstorage.removeItem(prefixes.concat([key]).join(delimiter));
-                        }
                     }
-                }
 
+                }
             }
         ];
     }

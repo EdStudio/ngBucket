@@ -1,9 +1,7 @@
 var gulp = require('gulp');
 var jshint = require('gulp-jshint');
 var stylish = require('jshint-stylish');
-var ngAnnotate = require('gulp-ng-annotate');
 var uglify = require('gulp-uglify');
-var sourcemaps = require('gulp-sourcemaps');
 var concat = require('gulp-concat');
 var del = require('del');
 
@@ -24,13 +22,10 @@ gulp.task('lint', function() {
 
 gulp.task('test', ['lint']);
 
-gulp.task('build', ['clean', 'test'], function() {
+gulp.task('build', ['clean'], function() {
     return gulp.src(paths.scripts)
-        .pipe(sourcemaps.init())
-        .pipe(ngAnnotate())
         .pipe(uglify())
         .pipe(concat(name + '.min.js'))
-        .pipe(sourcemaps.write('.'))
         .pipe(gulp.dest('.'))
 });
 
