@@ -48,9 +48,8 @@
                     $scope.buckets = $buckets;
 
                     whenStorage(function(event) {
-                        console.log(event);
                         var key = event.key;
-                        syncBuckets(key, function($storage, param) {
+                        syncBucket(key, function($storage, param) {
                             if (event.newValue) {
                                 $storage[param] = event.newValue;
                             } else {
@@ -61,7 +60,7 @@
 
                     for (var i = 0, size = webstorage.length; i < size; i++) {
                         var key = webstorage.key(i);
-                        syncBuckets(key, function($storage, param) {
+                        syncBucket(key, function($storage, param) {
                             $storage[param] = angular.fromJson(webstorage.getItem(key));
                         });
                     }
@@ -88,13 +87,49 @@
 
                 function whenStorage(callback) {
                     if ($window.addEventListener) {
-                        $window.addEventListener("storage", callback, false);
+                        $window.addEventListener('storage', callback);
                     } else {
-                        $window.attachEvent("onstorage", callback);
+                        $window.attachEvent('onstorage', callback);
                     }
                 }
 
-                function syncBuckets(key, handler) {
+
+                function sync() {
+                    if (!angular.equals($buckets, $snapshot)) {
+
+                        for (var name in $buckets) {
+                            syncStorage(
+                                prefix + delimiter + appname + delimiter + name,
+                                $buckets[name],
+                                $snapshot[name] || {}
+                            );
+                        }
+
+                        $snapshot = angular.copy($buckets);
+                    }
+                }
+
+                function syncStorage(prefix, storage, last) {
+                    if (!angular.equals(storage, last)) {
+
+                        for (var key in last) {
+                            if (!(key in storage)) webstorage.removeItem(prefix + delimiter + key);
+                        }
+
+                        for (var key in storage) {
+                            if (!(key in last) || !angular.equals(storage, last[key])) {
+                                webstorage.setItem(
+                                    prefix + delimiter + key,
+                                    typeof value === 'string' ? storage[key] : angular.toJson(storage[key])
+                                );
+                            }
+                        }
+
+                    }
+
+                }
+
+                function syncBucket(key, handler) {
                     var identifiers = key.split(delimiter);
                     if (identifiers.length >= 3 && prefix == identifiers[0] && appname == identifiers[1]) {
                         handler($manager.use(identifiers[2]), identifiers[3]);
@@ -135,38 +170,6 @@
 
                         return result;
                     };
-                }
-
-                function sync() {
-                    if (!angular.equals($buckets, $snapshot)) {
-                        var prefix = prefix + delimiter + appname + delimiter;
-
-                        for (var name in $buckets) {
-                            syncStorage(prefix + name, $buckets[name], $snapshot[name] || {});
-                        }
-
-                        $snapshot = angular.copy($buckets);
-                    }
-                }
-
-                function syncStorage(prefix, storage, last) {
-                    if (!angular.equals(storage, last)) {
-
-                        for (var key in last) {
-                            if (!(key in storage)) webstorage.removeItem(prefix + delimiter + key);
-                        }
-
-                        for (var key in storage) {
-                            if (!(key in last) || !angular.equals(storage, last[key])) {
-                                webstorage.setItem(
-                                    prefix + delimiter + key,
-                                    typeof value === 'string' ? storage[key] : angular.toJson(storage[key])
-                                );
-                            }
-                        }
-
-                    }
-
                 }
             }
         ];
