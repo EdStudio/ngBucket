@@ -3,11 +3,12 @@ WebStorage module for AngularJS
 
 ## Current Status
 
-#### Version 0.2.0
+#### Version 0.2.2
 This project is still under development.
 
 #### Todo
 
+* IE8 Storage event fix
 * Support CacheFactory
 * Test
 * Documentation

@@ -50,11 +50,13 @@
                     whenStorage(function(event) {
                         var key = event.key;
                         syncBucket(key, function($storage, param) {
-                            if (event.newValue) {
-                                $storage[param] = event.newValue;
-                            } else {
-                                delete $storage[param];
-                            }
+                            $scope.$apply(function() {
+                                if (event.newValue) {
+                                    $storage[param] = event.newValue;
+                                } else {
+                                    delete $storage[param];
+                                }
+                            });
                         });
                     });
 
