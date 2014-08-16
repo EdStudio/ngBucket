@@ -50,7 +50,7 @@
                     whenStorage(function(event) {
                         var key = event.key;
                         syncBucket(key, function($storage, param) {
-                            $scope.$apply(function() {
+                            $rootScope.$apply(function() {
                                 if (event.newValue) {
                                     $storage[param] = angular.fromJson(event.newValue);
                                 } else {
