@@ -52,7 +52,7 @@
                         syncBucket(key, function($storage, param) {
                             $scope.$apply(function() {
                                 if (event.newValue) {
-                                    $storage[param] = event.newValue;
+                                    $storage[param] = angular.fromJson(event.newValue);
                                 } else {
                                     delete $storage[param];
                                 }
