@@ -1,5 +1,4 @@
 # ngBucket
-========
 WebStorage module for AngularJS
 
 ## Current Status
@@ -19,7 +18,7 @@ This project is still under development.
 
 ```javascript
 angular
-.module('app', ['ngBucket']);
+.module('app', ['ngBucket'])
 .controller('ctrl', function($scope, LocalBuckets, SessionBuckets){});
 ```
 
