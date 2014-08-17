@@ -48,11 +48,12 @@
                     $scope.buckets = $buckets;
 
                     whenStorage(function(event) {
-                        var key = event.key;
+                        var key = event.key,
+                            value = event.newValue;
                         syncBucket(key, function($storage, param) {
                             $rootScope.$apply(function() {
-                                if (event.newValue) {
-                                    $storage[param] = angular.fromJson(event.newValue);
+                                if (value) {
+                                    $storage[param] = value.slice(-1) == '"' ? value : angular.fromJson(value);
                                 } else {
                                     delete $storage[param];
                                 }
@@ -63,7 +64,8 @@
                     for (var i = 0, size = webstorage.length; i < size; i++) {
                         var key = webstorage.key(i);
                         syncBucket(key, function($storage, param) {
-                            $storage[param] = angular.fromJson(webstorage.getItem(key));
+                            var item = webstorage.getItem(key);
+                            $storage[param] = item.slice(-1) == '"' ? item : angular.fromJson(item);
                         });
                     }
 
@@ -90,9 +92,11 @@
                 function whenStorage(callback) {
                     if ($window.addEventListener) {
                         $window.addEventListener('storage', callback);
-                    } else {
+                    }
+                    /* else {
                         $window.attachEvent('onstorage', callback);
                     }
+                    */
                 }
 
 
