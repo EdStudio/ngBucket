@@ -1,4 +1,4 @@
-(function() {
+(function () {
     'use strict';
 
     function _bucketConfigProvider() {
@@ -8,7 +8,7 @@
         config.app = 'default';
         config.delimiter = '.';
 
-        config.$get = function() {
+        config.$get = function () {
             return {
                 prefix: 'ngBucket',
                 app: config.app,
@@ -20,20 +20,20 @@
     function _bucketsFactory(name) {
 
         return ['$window', '$rootScope', '$log', 'ngBucketConfig',
-            function($window, $rootScope, $log, config) {
+            function ($window, $rootScope, $log, config) {
                 var isStorageSupported = isSupport(name),
                     $buckets = {},
                     $manager = {
-                        use: function(name, defaults) {
+                        use: function (name, defaults) {
                             return ($buckets[name] = angular.extend({}, defaults || {}, $buckets[name]));
                         },
-                        flush: function(name) {
+                        flush: function (name) {
                             delete $buckets[name];
                         },
-                        deleteAll: function() {
+                        deleteAll: function () {
                             $buckets = {};
                         },
-                        sync: function() {
+                        sync: function () {
                             if (isStorageSupported) sync();
                         }
                     };
@@ -47,23 +47,9 @@
 
                     $scope.buckets = $buckets;
 
-                    whenStorage(function(event) {
-                        var key = event.key,
-                            value = event.newValue;
-                        syncBucket(key, function($storage, param) {
-                            $rootScope.$apply(function() {
-                                if (value) {
-                                    $storage[param] = value.slice(-1) == '"' ? value : angular.fromJson(value);
-                                } else {
-                                    delete $storage[param];
-                                }
-                            });
-                        });
-                    });
-
                     for (var i = 0, size = webstorage.length; i < size; i++) {
                         var key = webstorage.key(i);
-                        syncBucket(key, function($storage, param) {
+                        syncBucket(key, function ($storage, param) {
                             var item = webstorage.getItem(key);
                             $storage[param] = item.slice(-1) == '"' ? item : angular.fromJson(item);
                         });
@@ -72,6 +58,19 @@
                     var $snapshot = angular.copy($buckets);
 
                     $scope.$watch(debounce(sync, 200));
+
+                    whenStorage(function (event) {
+                        var key = event.key, value = event.newValue;
+                        syncBucket(key, function ($storage, param) {
+                            if (value) {
+                                $storage[param] = value.slice(-1) == '"' ? value : angular.fromJson(value);
+                            } else {
+                                delete $storage[param];
+                            }
+                            $snapshot = angular.copy($buckets);
+                            $scope.$apply();
+                        });
+                    });
                 }
 
                 return $manager;
@@ -83,7 +82,8 @@
                         storage.getItem(name);
                         storage.removeItem(name);
                         return true;
-                    } catch (e) {
+                    }
+                    catch (e) {
                         $log.warn('ngBucket::Current browser does not support ' + name + '.');
                         return false;
                     }
@@ -98,7 +98,6 @@
                     }
                     */
                 }
-
 
                 function sync() {
                     if (!angular.equals($buckets, $snapshot)) {
@@ -149,12 +148,13 @@
                 function debounce(func, wait, immediate) {
                     var timeout, args, context, timestamp, result;
 
-                    var later = function() {
+                    var later = function () {
                         var last = now() - timestamp;
 
                         if (last < wait && last > 0) {
                             timeout = setTimeout(later, wait - last);
-                        } else {
+                        }
+                        else {
                             timeout = null;
                             if (!immediate) {
                                 result = func.apply(context, args);
@@ -163,7 +163,7 @@
                         }
                     };
 
-                    return function() {
+                    return function () {
                         context = this;
                         args = arguments;
                         timestamp = now();
